@@ -1,0 +1,24 @@
+pipeline:
+  name: "Centralized Data Pipeline"
+  version: "1.0.0"
+  description: "ETL pipeline — sources: MySQL to DataFrame"
+
+fg_customer:
+  feedname: fg_customer
+  developer: bai
+  sources:
+    id: customer
+    type: mysql
+    connection: mysql_main
+    query: "SELECT * FROM users"
+  filter: "waktu_daftar.notna()"
+
+fg_orders:
+  feedname: fg_orders
+  developer: bai
+  sources:
+    id: orders
+    type: mysql
+    connection: mysql_main
+    query: "SELECT * FROM orders"
+  filter: "status == 'active'"
