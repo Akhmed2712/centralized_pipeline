@@ -1,5 +1,6 @@
 import yaml
 from helper.extract import extract_source
+from helper.transform.filter import apply_filter
 from utils.logger import get_logger
 
 logger = get_logger("pipeline.runner")
@@ -19,8 +20,11 @@ def run_feed(feed_name, feed_conf, env="dev"):
         df = extract_source(source_conf)
         logger.info(f"{feed_name} - Extracted {len(df)} rows")
 
-        # (Transform nanti bisa diaktifkan lagi)
-        # df = apply_filter(...)
+        # 2. Filter
+        filter_expr = feed_conf.get("filter")
+        if filter_expr:
+            df = apply_filter(df, filter_expr)
+            logger.info(f"{feed_name} - After filter: {len(df)} rows")
 
         return df
 

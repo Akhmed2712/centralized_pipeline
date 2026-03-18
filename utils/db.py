@@ -1,17 +1,35 @@
 import yaml
 import pymysql
+import os
+import yaml
+import re
 
 _CONNECTION_MAP = {}
 
+def resolve_env_variables(raw_text):
+    pattern = re.compile(r"\$\{(\w+)\}")
+
+    def replacer(match):
+        var_name = match.group(1)
+        return os.getenv(var_name, "")
+
+    return pattern.sub(replacer, raw_text)
+
 def load_connections(env):
-    path = f"config/{env}/connections.yaml"
+    path = f"config/{env}/connections.yml"
 
     with open(path) as f:
-        config = yaml.safe_load(f)
+        raw = f.read()
+
+    resolved = resolve_env_variables(raw)
+
+    config = yaml.safe_load(resolved)
 
     return config["connections"]
 
 def build_connection_map(connections):
+    if isinstance(connections, dict):
+        connections = [connections]
     return {conn["id"]: conn for conn in connections}
 
 def get_connection(conn_id, env="dev"):
