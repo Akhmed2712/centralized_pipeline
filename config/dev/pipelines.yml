@@ -32,6 +32,12 @@ fg_pegawai:
       - column: agama
         op: notnull
 
+  target:
+    type: mysql
+    connection: mysql_main
+    table: fg_pegawai_test
+    if_exists: replace
+
 fg_pasien_with_bill:
   feedname: fg_pasien_with_bill
   developer: bai
