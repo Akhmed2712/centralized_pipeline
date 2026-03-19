@@ -1,94 +1,66 @@
 pipeline:
   name: "Centralized Data Pipeline"
   version: "1.0.0"
-  description: "ETL pipeline with joins — sources: MySQL to DataFrame"
+  description: "ETL pipeline — sources: MySQL to DataFrame"
 
-# Example 1: Simple join
-fg_customer_with_orders:
-  feedname: fg_customer_with_orders
+fg_nakes:
+  feedname: fg_nakes
   developer: bai
   sources:
-    id: customer
-    type: mysql
-    connection: mysql_main
-    query: "SELECT * FROM users"
-  filter: "waktu_daftar.notna()"
-  joins:
-    - type: "left"
-      on: "customer_id"
-      source:
-        id: orders
-        type: mysql
-        connection: mysql_main
-        query: "SELECT * FROM orders"
+    - id: nakes
+      type: mysql
+      connection: mysql_main
+      query: "SELECT * FROM dc_nakes"
+  
+  target:
+    type: csv
+    path: /data/output/nakes.csv
+    delimiter: "|"
+    header: False
 
-# Example 2: Multiple joins
-fg_customer_orders_payments:
-  feedname: fg_customer_orders_payments
+fg_pegawai:
+  feedname: fg_pegawai
   developer: bai
   sources:
-    id: customer
-    type: mysql
-    connection: mysql_main
-    query: "SELECT id, name, email FROM users"
-  filter: "email.notna()"
-  joins:
-    # First join: customers with orders
-    - type: "left"
-      on: "id"
-      suffix: ("_customer", "_order")
-      source:
-        id: orders
-        type: mysql
-        connection: mysql_main
-        query: "SELECT * FROM orders WHERE status = 'completed'"
-    # Second join: add payment information
-    - type: "inner"
-      left_on: "order_id"
-      right_on: "id"
-      source:
-        id: payments
-        type: mysql
-        connection: mysql_main
-        query: "SELECT * FROM payments"
+    - id: pegawai
+      type: mysql
+      connection: mysql_main
+      query: "SELECT * FROM dc_pegawai"
+  
+  transform:
+    filter:
+      - column: agama
+        op: notnull
 
-# Example 3: Join with different column names
-fg_orders_with_customer_details:
-  feedname: fg_orders_with_customer_details
+fg_pasien_with_bill:
+  feedname: fg_pasien_with_bill
   developer: bai
   sources:
-    id: orders
-    type: mysql
-    connection: mysql_main
-    query: "SELECT * FROM orders"
-  filter: "status == 'active'"
-  joins:
-    - type: "left"
-      left_on: "customer_id"
-      right_on: "id"
-      suffix: ("_order", "_customer")
-      source:
-        id: customer
-        type: mysql
-        connection: mysql_main
-        query: "SELECT * FROM users"
+    - id: pendaftaran
+      type: mysql
+      connection: mysql_main
+      query: "select id, id_pasien from dc_pendaftaran"
 
-fg_customer:
-  feedname: fg_customer
-  developer: bai
-  sources:
-    id: customer
-    type: mysql
-    connection: mysql_main
-    query: "SELECT * FROM users"
-  filter: "waktu_daftar.notna()"
+    - id: layanan_pendaftaran
+      type: mysql
+      connection: mysql_main
+      query: "select id, id_pendaftaran, id_dokter, cara_bayar, terklaim, status from dc_layanan_pendaftaran"
 
-fg_orders:
-  feedname: fg_orders
-  developer: bai
-  sources:
-    id: orders
+  join:
+    left: pendaftaran        
+    right: layanan_pendaftaran     
+    how: left              
+    "on":
+      left: id
+      right: id_pendaftaran
+                    
+  transform:
+    filter:
+      - column: id_pendaftaran
+        op: notnull
+
+  target:
     type: mysql
     connection: mysql_main
-    query: "SELECT * FROM orders"
-  filter: "status == 'active'"
+    table: output_table
+    if_exists: replace
